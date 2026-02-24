@@ -29,13 +29,6 @@ def compute_rsi(close, period=5):
     loss = -delta.clip(upper=0).rolling(period).mean().replace(0, 1e-9)
     rs = gain / loss
     return 100 - (100/(rs))
-def compute_atr(high, low, close, window=14):
-    tr1 = high - low
-    tr2 = (high - close.shift()).abs()
-    tr3 = (low - close.shift()).abs()
-    tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
-    atr = tr.rolling(window).mean()
-    return atr
 
 def compute_macd(close):
     fast = compute_ema(close, 15)
@@ -66,32 +59,52 @@ def generate_signals(df):
     df["MACD"], df["MACD_sig"] = compute_macd(df["close"])
     df["%K"], df["%D"] = compute_stochastic(df["high"], df["low"], df["close"])
 
+    # Score system for BUY
+    cond1 = df["close"] > df["EMA100"]
+    cond2 = df["EMA20"] > df["EMA100"]
+    cond3 = df["close"] <= df["BB_low"]
+    cond4 = df["RSI"] <= 35
+    cond5 = (df["%K"].shift(1) < df["%D"].shift(1)) | (df["%K"] > df["%D"])
 
-    df["Buy"] = (
-        ((df["close"] >= df["EMA100"]) &
-        ((df["EMA20"] >= df["EMA100"]) &
-        (df["close"] <= df["BB_low"])) &
-        (df["RSI"] <= 35)) &
-        ((df["%K"] <= 20) | (df["%D"] <= 20))
-        
+    score = (
+        cond1.astype(int) * (16/8) +
+        cond2.astype(int) * (8/8) +
+        cond3.astype(int) * 1 +
+        cond4.astype(int) * 1 +
+        cond5.astype(int) * (6/8)
     )
+    df["BuyScore"] = score
+    df["Buy"] = score >= 5  # 50% of 9
 
-    df["Sell"] = (
-        (df["EMA20"] < df["EMA100"]) &
-        ((df["close"] >= df["BB_up"])) &
-        (df["RSI"] >= 80) &
-        (((df["MACD"].shift(1) > df["MACD_sig"].shift(1))) |
-        ((df["MACD"] < df["MACD_sig"])))
-        
+    # Score system for SELL
+    scond1 = df["EMA20"] <= df["EMA100"]
+    scond2 = (df["close"] >= df["BB_up"])
+    scond3 = df["RSI"] >= 80
+    scond4 = (df["MACD"].shift(1) >= df["MACD_sig"].shift(1))
+    scond5 = (df["MACD"] < df["MACD_sig"])
+
+    sell_score = (
+        scond1.astype(int) * (18/9) +
+        scond2.astype(int) * 1 +
+        scond3.astype(int) * 1 +
+        scond4.astype(int) * (6/9) +
+        scond5.astype(int) * (5/10)
     )
+    df["SellScore"] = sell_score
+    df["Sell"] = sell_score >= 4.2  # 50% of 9
 
     return df
 
 # ==========================================================
 # BACKTEST ENGINE (COMPLIANT EXECUTION)
 # ==========================================================
+
 # ==========================================================
-# BACKTEST ENGINE (COMPLIANT EXECUTION) - NO CASH DRAG
+# BACKTEST ENGINE (COMPLIANT EXECUTION) - UPDATED SIZING
+# ==========================================================
+
+# ==========================================================
+# BACKTEST ENGINE (COMPLIANT EXECUTION) - RANKED ENTRIES
 # ==========================================================
 
 def run_backtest(data):
@@ -101,7 +114,7 @@ def run_backtest(data):
     equity_curve = []
     trade_log = []
     total_traded_value = 0
-    MAX_POSITION_SIZE = 0.5
+    MAX_POSITION_SIZE = 1.23
     
 
     dates = sorted(data["tradedate"].unique())
@@ -110,7 +123,6 @@ def run_backtest(data):
 
         today = dates[i]
         tomorrow = dates[i+1]
-
         df_today = data[data["tradedate"]==today]
         df_next = data[data["tradedate"]==tomorrow]
 
@@ -198,104 +210,9 @@ def run_backtest(data):
 
     return equity_curve, trade_log, turnover
 
-    cash = INITIAL_CAPITAL
-    positions = {}
-    equity_curve = []
-    trade_log = []
-    total_traded_value = 0
-    MAX_POSITION_SIZE = .5
-    
-   
-    dates = sorted(data["tradedate"].unique())
-
-    for i in range(MIN_HISTORY_DAYS, len(dates)-1):
-
-        today = dates[i]
-        tomorrow = dates[i+1]
-
-        df_today = data[data["tradedate"]==today]
-        df_next = data[data["tradedate"]==tomorrow]
-
-        # --- EXIT ---
-        for sym in list(positions.keys()):
-            row = df_today[df_today["index_name"]==sym]
-            if not row.empty and row["Sell"].iloc[0]:
-
-                row_next = df_next[df_next["index_name"]==sym]
-                if not row_next.empty:
-
-                    exec_price = row_next[["open","high","low","close"]].mean(axis=1).iloc[0]
-                    sell_price = exec_price*(1-TRANSACTION_COST)
-
-                    qty = positions.pop(sym)
-                    traded_value = qty*exec_price
-                    total_traded_value += traded_value
-
-                    cash += qty*sell_price
-
-                    trade_log.append([tomorrow,sym,"SELL",qty,exec_price])
-
-        # --- ENTRY ---
-        buys = df_today[
-            df_today["Buy"] &
-            ~df_today["index_name"].isin(positions)
-        ]
-
-        if not buys.empty:
-            
-            current_portfolio_value = cash
-            for sym, qty in positions.items():
-                sym_row = df_today[df_today["index_name"]==sym]
-                if not sym_row.empty:
-                    current_portfolio_value += qty * sym_row["close"].iloc[0]
-
-            max_allocation = current_portfolio_value * MAX_POSITION_SIZE
-
-            for sym in buys["index_name"]:
-                if cash <= 0:
-                    break 
-                
-                allocation = min(max_allocation, cash)
-
-                row_next = df_next[df_next["index_name"]==sym]
-                if not row_next.empty:
-
-                    exec_price = row_next[["open","high","low","close"]].mean(axis=1).iloc[0]
-                    buy_price = exec_price*(1+TRANSACTION_COST)
-
-                    qty = allocation//buy_price
-                    cost = qty*buy_price
-
-                    if qty>0 and cost<=cash:
-
-                        traded_value = qty*exec_price
-                        total_traded_value += traded_value
-
-                        positions[sym]=qty
-                        cash-=cost
-
-                        trade_log.append([tomorrow,sym,"BUY",qty,exec_price])
-
-        # --- DAILY VALUE ---
-        portfolio_value = cash
-        for sym,qty in positions.items():
-            close_price = df_today[df_today["index_name"]==sym]["close"].iloc[0]
-            portfolio_value += qty*close_price
-
-        equity_curve.append({
-            "Date":today,
-            "PortfolioValue":portfolio_value,
-            "Positions":len(positions)
-        })
-
-    equity_curve = pd.DataFrame(equity_curve)
-    trade_log = pd.DataFrame(trade_log,columns=["Date","Symbol","Side","Qty","ExecPrice"])
-
-    turnover = total_traded_value / INITIAL_CAPITAL
-
-    return equity_curve, trade_log, turnover
-
-#PERFORMANCE MATRICS
+# ==========================================================
+# PERFORMANCE METRICS
+# ==========================================================
 
 def compute_drawdown(series):
     running_max = series.cummax()
@@ -329,6 +246,8 @@ def compute_rolling_series(df, window):
     strat = (1 + df["Ret"]).rolling(window).apply(np.prod, raw=True) - 1
     bench = (1 + df["BRet"]).rolling(window).apply(np.prod, raw=True) - 1
     return strat - bench
+
+
 # ==========================================================
 # ANALYSIS PIPELINE
 # ==========================================================

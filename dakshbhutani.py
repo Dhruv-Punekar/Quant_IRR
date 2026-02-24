@@ -193,6 +193,5 @@ def main():
         print(f"{k}: {v:.6f}")
     print(f"\nPortfolio Turnover: {turnover:.4f}")
 
-
 if __name__ == "__main__":
     main()
