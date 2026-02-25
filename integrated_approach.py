@@ -461,8 +461,9 @@ def run_backtest(data):
 #================
 def main():
 # 1️⃣ Load data
-    csv_name = input("Enter the name of the CSV file containing the index data (e.g., indexes.csv): ")
-    data = pd.read_csv(csv_name)
+    # csv_name = input("Enter the name of the CSV file containing the index data (e.g., indexes.csv): ")
+    data = pd.read_csv('indexes.csv', parse_dates=["tradedate"])
+
     data = fill_missing_prices(data)
 
     data.sort_values(['index_name', 'tradedate'], inplace=True)
@@ -493,12 +494,12 @@ def main():
     metrics, full_df = analyze_performance(equity_curve,data)
 
     # OUTPUTS REQUIRED
-    equity_curve.to_csv("equity_curve.csv",index=False)
-    trade_log.to_csv("trade_log.csv",index=False)
-    full_df[["Date","Drawdown"]].to_csv("drawdown_curve.csv",index=False)
+    equity_curve.to_csv("./performance_stats/integrated_performance/equity_curve.csv",index=False)
+    trade_log.to_csv("./performance_stats/integrated_performance/trade_log.csv",index=False)
+    full_df[["Date","Drawdown"]].to_csv("./performance_stats/integrated_performance/drawdown_curve.csv",index=False)
 
     # Export metrics
-    pd.DataFrame(metrics, index=[0]).to_csv("performance_metrics.csv", index=False)
+    pd.DataFrame(metrics, index=[0]).to_csv("./performance_stats/integrated_performance/performance_metrics.csv", index=False)
 
     # Export rolling table
     rolling_table = pd.DataFrame({
@@ -507,10 +508,10 @@ def main():
     "Roll_3Y": compute_rolling_series(full_df,756),
     "Roll_5Y": compute_rolling_series(full_df,1260)
 })
-    rolling_table.to_csv("rolling_outperformance.csv", index=False)
+    rolling_table.to_csv("./performance_stats/integrated_performance/rolling_outperformance.csv", index=False)
 
     # Export turnover
-    pd.DataFrame({"Turnover":[turnover]}).to_csv("turnover.csv", index=False)
+    pd.DataFrame({"Turnover":[turnover]}).to_csv("./performance_stats/integrated_performance/turnover.csv", index=False)
 
     print("\n===== PERFORMANCE METRICS =====")
     for k,v in metrics.items():
