@@ -166,7 +166,7 @@ def main():
     data_with_sigmoid = generate_signals(df_with_scores)
 
     # 5. Save the output so your ensemble script can load it
-    output_filename = "model_1_sigmoid_scores.csv"
+    output_filename = "ml_approach.csv"
 
     # Extracting just the necessary columns to keep the file lightweight for the ensemble
     ensemble_df = data_with_sigmoid[
@@ -180,4 +180,5 @@ def main():
 
 if __name__ == "__main__":
     df_scores = main()
+
 
