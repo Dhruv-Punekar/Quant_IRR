@@ -1,111 +1,100 @@
-# Quant Market Movement Prediction & Signal Generation (Long‑Term Strategy)
+# Quant_IRR — Long-Term Market Strategy (Quant / ML / Hybrid)
 
-This repository contains a Python-based quantitative research project built as part of an **inter-hostel competition**. The **problem statement was provided by Beyond IRR** (see `Kriti2026_quant.pdf`). The project focuses on **predicting market movement** and **generating long-term Buy/Sell signals**.
+This repository contains a Python-based quant research project built to design a **long-term investment strategy** using historical market data and to **generate Buy/Sell signals** based on that strategy. The project was developed in the context of an **inter-hostel competition**, with the **problem statement provided by Beyond IRR**.
 
-The work explores three approaches:
-
-1. **Pure Quantitative (rule/indicator-based) approach**
-2. **Machine Learning (ML) approach**
-3. **Integrated approach** combining Quant + ML
-
-The repository is organized so that **file names clearly indicate the approach used**, and **all evaluation outputs/metrics are stored in the `performance_stats/` folder** with descriptive names.
+We evaluate and compare three approaches:
+1. **Quantitative (rule/indicator-based)**
+2. **Machine Learning (ML)**
+3. **Integrated (Quant + ML hybrid)**
 
 ---
 
-## Project Objective
+## Repository Layout
 
-- Analyze index/market data
-- Build long-term trading signals (Buy/Sell)
-- Evaluate strategies using relevant performance metrics (returns, drawdowns, risk-adjusted measures, etc.)
-- Compare outcomes across:
-  - Quant-only logic
-  - ML-only model
-  - Integrated Quant+ML pipeline
-
----
-
-## Repository Structure
-
-### Core approaches
-
-- **`quantitative_approach.py`**
-  - Implements a **traditional quantitative strategy**, typically based on engineered indicators, rules, trend logic, or statistical signals.
-  - Produces Buy/Sell signals and/or positions for long-term holding periods.
-
-- **`ML.py`**
-  - Implements the **machine learning approach**.
-  - Includes feature engineering and model training/inference logic to predict market direction/movement and translate predictions into signals.
-
-- **`integrated_approach.py`**
-  - Implements the **hybrid approach**, integrating quantitative features/signals with ML predictions (or using quant logic as filters/confirmations).
-  - Designed to test whether combining both improves robustness and performance.
+- `quantitative_approach.py` — Quant-only strategy + signal generation + evaluation
+- `ML.py` — ML-based prediction + signal generation + evaluation
+- `integrated_approach.py` — Hybrid approach combining Quant + ML + evaluation
+- `plot_performance.py` — Plots/visualizations for performance and comparisons
+- `performance_stats/` — Stored evaluation metrics and results (per approach)
+- `indexes.csv` — Input dataset used for analysis/backtesting
+- `PERFORMANCE_AND_ML_REPORT.md` — Project report and summarized results
+- `ML_README.md` — ML-specific notes
+- `Kriti2026_quant.pdf` — Problem statement document (Beyond IRR)
 
 ---
 
-## Data / Inputs
+## Setup (Virtual Environment)
 
-- **`indexes.csv`**
-  - Primary dataset used for the analysis (index/market values and related fields).
-  - Used across quant, ML, and integrated workflows.
+### 1) Clone the repository
+```bash
+git clone https://github.com/Dhruv-Punekar/Quant_IRR.git
+cd Quant_IRR
+```
 
-- **`Kriti2026_quant.pdf`**
-  - Official problem statement shared by **Beyond IRR** for the competition.
+### 2) Create and activate a virtual environment
 
----
+**Windows (PowerShell)**
+```bash
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
 
-## Evaluation & Results
-
-- **`performance_stats/`**
-  - Contains **all performance evaluation metrics and outputs**, stored with meaningful filenames.
-  - This folder is the primary place to look for backtest summaries, metric tables, and evaluation artifacts.
-
-- **`PERFORMANCE_AND_ML_REPORT.md`**
-  - Consolidated write-up/report describing performance results and ML observations.
-
-- **`plot_performance.py`**
-  - Utility for generating plots/visualizations of performance and/or equity curves from computed results.
-
----
-
-## Additional Notes
-
-- **`ML_README.md`**
-  - ML-specific notes and documentation (features, models, pipeline details, etc.)
+**macOS / Linux**
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
 
 ---
 
-## How to Run (Typical Workflow)
+## Execution Commands
 
-> Exact commands may vary depending on how each script is implemented, but a common workflow is:
+> Run scripts from the repository root after activating the virtual environment.
 
-1. **Run Quant strategy**
-   - `python quantitative_approach.py`
+### A) Quantitative approach
+Runs the pure quant strategy and saves performance outputs to `performance_stats/`.
+```bash
+python quantitative_approach.py
+```
 
-2. **Run ML strategy**
-   - `python ML.py`
+### B) Machine Learning approach
+Runs the ML pipeline (feature engineering + training/inference) and saves results to `performance_stats/`.
+```bash
+python ML.py
+```
 
-3. **Run Integrated strategy**
-   - `python integrated_approach.py`
+### C) Integrated (Quant + ML) approach
+Runs the hybrid pipeline and saves results to `performance_stats/`.
+```bash
+python integrated_approach.py
+```
 
-4. **Generate plots**
-   - `python plot_performance.py`
-
-After running, check:
-- `performance_stats/` for saved metrics/results
-- `PERFORMANCE_AND_ML_REPORT.md` for summarized findings
+### D) Plot performance / visualize results
+Creates plots using the computed results/metrics (commonly read from `performance_stats/`).
+```bash
+python plot_performance.py
+```
 
 ---
 
-## Expected Outputs
+## Outputs & Where to Find Them
 
-Depending on the approach, the scripts typically generate:
-- Predicted market movement labels/scores (ML / integrated)
-- Buy/Sell signals or position series
-- Backtest performance metrics (saved under `performance_stats/`)
-- Visualizations (via `plot_performance.py`)
+- **Signals / predictions / backtest metrics**: saved inside `performance_stats/`
+- **Project write-ups**:
+  - `PERFORMANCE_AND_ML_REPORT.md`
+  - `ML_README.md`
+- **Problem statement**: `Kriti2026_quant.pdf` (Beyond IRR)
+
+---
+
+## Notes / Assumptions
+
+- The dataset `indexes.csv` is assumed to be the main input for all approaches.
+- File names reflect which approach is being executed.
+- Results are persisted so that `plot_performance.py` can generate charts without re-running everything (depending on implementation).
 
 ---
 
 ## Disclaimer
 
-This project is for educational/research purposes (inter-hostel competition). It does not constitute financial advice. Trading and investing involve risk, and past performance does not guarantee future results.
+This project is intended for educational/research purposes (inter-hostel competition) and does not constitute financial advice. Markets involve risk; past performance does not guarantee future results.
